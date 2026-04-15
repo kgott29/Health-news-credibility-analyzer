@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HealthCheck — News Credibility Analyser</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--ink:#0f1117;--paper:#f8f6f1;--cream:#ede9e0;--accent:#c0392b;--accent2:#2980b9;--green:#27ae60;--orange:#e67e22;--red:#c0392b;--border:rgba(15,17,23,.12);--shadow:0 2px 24px rgba(15,17,23,.08);--radius:14px;--mono:"DM Sans",sans-serif;--serif:"DM Serif Display",serif}
+body{font-family:var(--mono);background:var(--paper);color:var(--ink);min-height:100vh;line-height:1.6}
+header{background:var(--ink);color:white;padding:28px 32px 24px;display:flex;align-items:baseline;gap:16px}
+header .logo{font-family:var(--serif);font-size:1.9rem;letter-spacing:-.02em}
+header .logo span{color:#e74c3c}
+header .tagline{font-size:.8rem;font-weight:300;opacity:.55;letter-spacing:.08em;text-transform:uppercase}
+.wrapper{max-width:900px;margin:0 auto;padding:40px 24px 80px}
+.input-card{background:white;border:1px solid var(--border);border-radius:var(--radius);padding:32px;box-shadow:var(--shadow);margin-bottom:36px}
+.input-card h2{font-family:var(--serif);font-size:1.35rem;margin-bottom:22px}
+.tabs{display:flex;margin-bottom:22px;border-bottom:2px solid var(--cream)}
+.tab-btn{background:none;border:none;cursor:pointer;font-family:var(--mono);font-size:.88rem;font-weight:500;padding:10px 20px;color:#888;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
+.tab-btn.active{color:var(--ink);border-bottom-color:var(--ink)}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+input[type="url"],textarea{width:100%;padding:14px 16px;border:1.5px solid var(--border);border-radius:10px;font-family:var(--mono);font-size:.9rem;background:var(--paper);color:var(--ink);transition:border-color .2s;resize:vertical}
+input[type="url"]:focus,textarea:focus{outline:none;border-color:var(--ink)}
+textarea{min-height:160px}
+.char-count{font-size:.78rem;color:#aaa;margin-top:6px;text-align:right}
+.analyse-btn{margin-top:20px;width:100%;background:var(--ink);color:white;border:none;border-radius:10px;padding:15px 24px;font-family:var(--mono);font-size:.95rem;font-weight:600;cursor:pointer;letter-spacing:.03em;transition:background .2s,transform .1s;display:flex;align-items:center;justify-content:center;gap:10px}
+.analyse-btn:hover{background:#222}
+.analyse-btn:disabled{background:#aaa;cursor:not-allowed}
+.spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+#results{display:none}
+.result-card{background:white;border:1px solid var(--border);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow);margin-bottom:20px}
+.risk-header{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.risk-badge{font-family:var(--serif);font-size:1.5rem;padding:8px 22px;border-radius:50px;display:inline-block}
+.risk-low{background:#d5f5e3;color:#1a7a40}
+.risk-moderate{background:#fef9e7;color:#9a6b00}
+.risk-high{background:#fdecea;color:#a93226}
+.risk-very-high{background:#f4ecf7;color:#6c3483}
+.article-title{font-family:var(--serif);font-size:1.1rem;color:#555;font-style:italic}
+.meters{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px}
+@media(max-width:520px){.meters{grid-template-columns:1fr}}
+.meter-box{background:var(--paper);border-radius:10px;padding:18px 20px}
+.meter-label{font-size:.8rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;color:#666}
+.meter-bar-bg{background:var(--cream);border-radius:20px;height:10px;overflow:hidden}
+.meter-bar{height:100%;border-radius:20px;transition:width 1s cubic-bezier(.4,0,.2,1);width:0}
+.bar-emotional{background:linear-gradient(90deg,#f39c12,#e74c3c)}
+.bar-scientific{background:linear-gradient(90deg,#3498db,#27ae60)}
+.meter-value{font-size:1.4rem;font-weight:700;margin-top:8px}
+.gauge-wrap{display:flex;justify-content:center;margin-top:24px}
+.ai-summary{background:#f0f4ff;border-left:4px solid var(--accent2);border-radius:8px;padding:18px 20px;margin:20px 0}
+.ai-summary .label{font-size:.75rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent2);margin-bottom:8px}
+.ai-summary p{font-size:.93rem;line-height:1.65}
+.advice-box{background:#fffbea;border-left:4px solid var(--orange);border-radius:8px;padding:14px 18px;font-size:.9rem;margin-top:16px}
+.advice-box strong{display:block;font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;color:var(--orange);margin-bottom:4px}
+.signals-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:600px){.signals-grid{grid-template-columns:1fr}}
+.signal-section h3{font-family:var(--serif);font-size:1.05rem;margin-bottom:14px;padding-bottom:8px;border-bottom:1.5px solid var(--cream)}
+.signal-section.emotional h3{color:#a93226}
+.signal-section.scientific h3{color:#1a5276}
+.tag-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.tag{font-size:.78rem;padding:4px 10px;border-radius:20px;font-weight:500}
+.tag-red{background:#fdecea;color:#a93226}
+.tag-orange{background:#fef0e7;color:#8a4500}
+.tag-blue{background:#eaf4fb;color:#1a5276}
+.tag-green{background:#d5f5e3;color:#1a6b35}
+.signal-row{display:flex;justify-content:space-between;align-items:center;font-size:.86rem;padding:6px 0;border-bottom:1px solid var(--cream)}
+.signal-row:last-child{border-bottom:none}
+.signal-row .val{font-weight:600}
+.val-red{color:var(--red)}
+.val-green{color:var(--green)}
+.val-orange{color:var(--orange)}
+.list-section{margin-top:16px}
+.list-section h4{font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;font-weight:600;margin-bottom:8px}
+.concern-list,.positive-list{list-style:none}
+.concern-list li,.positive-list li{font-size:.88rem;padding:5px 0 5px 22px;position:relative;line-height:1.5}
+.concern-list li::before{content:"⚠";position:absolute;left:0;color:var(--orange)}
+.positive-list li::before{content:"✓";position:absolute;left:0;color:var(--green)}
+.error-box{background:#fdecea;border:1px solid #e74c3c44;border-radius:10px;padding:18px 22px;color:#a93226;font-size:.9rem;margin-bottom:20px;display:none}
+footer{text-align:center;padding:20px;font-size:.78rem;color:#bbb}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Health<span>Check</span></div>
+  <div class="tagline">News Credibility Assessment</div>
+</header>
+<div class="wrapper">
+  <div class="input-card">
+    <h2>Analyse a Health Article</h2>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="url">🔗 Article URL</button>
+      <button class="tab-btn" data-tab="text">📋 Paste Text</button>
+    </div>
+    <div id="tab-url" class="tab-pane active">
+      <input type="url" id="urlInput" placeholder="https://example.com/health-article" autocomplete="off" />
+    </div>
+    <div id="tab-text" class="tab-pane">
+      <textarea id="textInput" placeholder="Paste the health news article text here…"></textarea>
+      <div class="char-count"><span id="charCount">0</span> characters</div>
+    </div>
+    <button class="analyse-btn" id="analyseBtn">
+      <div class="spinner" id="spinner"></div>
+      <span id="btnText">Analyse Credibility</span>
+    </button>
+  </div>
+  <div class="error-box" id="errorBox"></div>
+  <div id="results">
+    <div class="result-card">
+      <div class="risk-header">
+        <span class="risk-badge" id="riskBadge">—</span>
+        <div>
+          <div style="font-size:.78rem;color:#888;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px;">Credibility Risk Score</div>
+          <div style="font-size:2rem;font-weight:700;" id="riskScore">—</div>
+        </div>
+        <div id="articleTitle" class="article-title" style="flex:1;min-width:180px;"></div>
+      </div>
+      <div class="gauge-wrap">
+        <svg width="260" height="145" viewBox="0 0 260 145">
+          <defs>
+            <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#27ae60"/>
+              <stop offset="35%" stop-color="#f1c40f"/>
+              <stop offset="65%" stop-color="#e67e22"/>
+              <stop offset="100%" stop-color="#8e44ad"/>
+            </linearGradient>
+          </defs>
+          <path d="M 20 130 A 110 110 0 0 1 240 130" fill="none" stroke="#e0ddd5" stroke-width="18" stroke-linecap="round"/>
+          <path id="gaugeFill" d="M 20 130 A 110 110 0 0 1 240 130" fill="none" stroke="url(#gaugeGrad)" stroke-width="18" stroke-linecap="round" stroke-dasharray="0 346"/>
+          <line id="gaugeNeedle" x1="130" y1="130" x2="130" y2="30" stroke="#0f1117" stroke-width="2.5" stroke-linecap="round" transform="rotate(0,130,130)"/>
+          <circle cx="130" cy="130" r="6" fill="#0f1117"/>
+          <text x="10" y="145" font-size="10" fill="#888">Low</text>
+          <text x="112" y="20" font-size="10" fill="#888" text-anchor="middle">Moderate</text>
+          <text x="230" y="145" font-size="10" fill="#888" text-anchor="end">Very High</text>
+        </svg>
+      </div>
+      <div class="meters">
+        <div class="meter-box">
+          <div class="meter-label">Emotional Manipulation</div>
+          <div class="meter-bar-bg"><div class="meter-bar bar-emotional" id="barEmotional"></div></div>
+          <div class="meter-value" id="valEmotional">—</div>
+        </div>
+        <div class="meter-box">
+          <div class="meter-label">Scientific Credibility</div>
+          <div class="meter-bar-bg"><div class="meter-bar bar-scientific" id="barScientific"></div></div>
+          <div class="meter-value" id="valScientific">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="result-card">
+      <h2 style="font-family:var(--serif);margin-bottom:16px;">Assessment</h2>
+      <div class="ai-summary">
+        <div class="label">Summary</div>
+        <p id="aiSummary">—</p>
+      </div>
+      <div class="signals-grid" style="margin-top:16px;">
+        <div class="list-section">
+          <h4 style="color:#a93226;">⚠ Key Concerns</h4>
+          <ul class="concern-list" id="concernList"></ul>
+        </div>
+        <div class="list-section">
+          <h4 style="color:#1a6b35;">✓ Positive Indicators</h4>
+          <ul class="positive-list" id="positiveList"></ul>
+        </div>
+      </div>
+      <div class="advice-box">
+        <strong>Reader Advice</strong>
+        <span id="readerAdvice">—</span>
+      </div>
+    </div>
+    <div class="result-card">
+      <h2 style="font-family:var(--serif);margin-bottom:20px;">Signal Breakdown</h2>
+      <div class="signals-grid">
+        <div class="signal-section emotional">
+          <h3>🔴 Emotional / Manipulation</h3>
+          <div style="font-size:.78rem;font-weight:600;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">Sensational Words</div>
+          <div class="tag-list" id="sensationalTags"></div>
+          <div style="font-size:.78rem;font-weight:600;color:#888;margin:10px 0 6px;text-transform:uppercase;letter-spacing:.05em;">Absolutist Language</div>
+          <div class="tag-list" id="absolutistTags"></div>
+          <div style="margin-top:14px;">
+            <div class="signal-row"><span>Exaggeration patterns</span><span class="val" id="exaggerationVal">—</span></div>
+            <div class="signal-row"><span>Emotional triggers</span><span class="val" id="triggerVal">—</span></div>
+            <div class="signal-row"><span>ALL CAPS words</span><span class="val" id="capsVal">—</span></div>
+            <div class="signal-row"><span>Exclamation marks</span><span class="val" id="exclVal">—</span></div>
+            <div class="signal-row"><span>Sentiment</span><span class="val" id="sentimentVal">—</span></div>
+          </div>
+        </div>
+        <div class="signal-section scientific">
+          <h3>🔵 Scientific Credibility</h3>
+          <div style="font-size:.78rem;font-weight:600;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">Institutions Mentioned</div>
+          <div class="tag-list" id="institutionTags"></div>
+          <div style="font-size:.78rem;font-weight:600;color:#888;margin:10px 0 6px;text-transform:uppercase;letter-spacing:.05em;">Statistical Claims</div>
+          <div class="tag-list" id="statisticsTags"></div>
+          <div style="margin-top:14px;">
+            <div class="signal-row"><span>Research references</span><span class="val" id="researchVal">—</span></div>
+            <div class="signal-row"><span>Citations / links</span><span class="val" id="citationVal">—</span></div>
+            <div class="signal-row"><span>Hedge words</span><span class="val" id="hedgeVal">—</span></div>
+            <div class="signal-row"><span>External links</span><span class="val" id="linksVal">—</span></div>
+            <div class="signal-row"><span>Word count</span><span class="val" id="wordCountVal">—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<footer>HealthCheck · Local credibility analysis · Not a substitute for professional fact-checking</footer>
+<script>
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".tab-pane").forEach(p=>p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("tab-"+btn.dataset.tab).classList.add("active");
+  });
+});
+document.getElementById("textInput").addEventListener("input",function(){
+  document.getElementById("charCount").textContent=this.value.length;
+});
+document.getElementById("analyseBtn").addEventListener("click",async()=>{
+  const urlInput=document.getElementById("urlInput").value.trim();
+  const textInput=document.getElementById("textInput").value.trim();
+  const activeTab=document.querySelector(".tab-btn.active").dataset.tab;
+  const payload=activeTab==="url"?{url:urlInput}:{text:textInput};
+  if(activeTab==="url"&&!urlInput)return showError("Please enter a URL.");
+  if(activeTab==="text"&&textInput.length<50)return showError("Please paste at least 50 characters of text.");
+  setLoading(true);clearError();
+  document.getElementById("results").style.display="none";
+  try{
+    const res=await fetch("/api/analyse",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    const data=await res.json();
+    if(!res.ok){showError(data.error||"Analysis failed.");return;}
+    renderResults(data);
+  }catch(e){showError("Network error — is the server running? ("+e.message+")");}
+  finally{setLoading(false);}
+});
+function setLoading(on){
+  document.getElementById("spinner").style.display=on?"block":"none";
+  document.getElementById("btnText").textContent=on?"Analysing…":"Analyse Credibility";
+  document.getElementById("analyseBtn").disabled=on;
+}
+function showError(msg){const b=document.getElementById("errorBox");b.textContent="⚠ "+msg;b.style.display="block";}
+function clearError(){document.getElementById("errorBox").style.display="none";}
+function renderResults(d){
+  const riskClass={"Low Risk":"risk-low","Moderate Risk":"risk-moderate","High Risk":"risk-high","Very High Risk":"risk-very-high"}[d.risk_label]||"risk-moderate";
+  document.getElementById("riskBadge").textContent=d.risk_label;
+  document.getElementById("riskBadge").className="risk-badge "+riskClass;
+  document.getElementById("riskScore").textContent=d.risk_score+" / 100";
+  document.getElementById("articleTitle").textContent=d.title||"";
+  const pct=d.risk_score/100;
+  document.getElementById("gaugeFill").setAttribute("stroke-dasharray",(pct*346)+" 346");
+  document.getElementById("gaugeNeedle").setAttribute("transform",`rotate(${-90+pct*180},130,130)`);
+  setTimeout(()=>{
+    document.getElementById("barEmotional").style.width=(d.emotional_score*100)+"%";
+    document.getElementById("barScientific").style.width=(d.scientific_score*100)+"%";
+  },80);
+  document.getElementById("valEmotional").textContent=Math.round(d.emotional_score*100)+"%";
+  document.getElementById("valScientific").textContent=Math.round(d.scientific_score*100)+"%";
+  const ai=d.ai_assessment||{};
+  document.getElementById("aiSummary").textContent=ai.summary||"—";
+  document.getElementById("readerAdvice").textContent=ai.reader_advice||"—";
+  const cL=document.getElementById("concernList");cL.innerHTML="";
+  (ai.key_concerns||[]).forEach(c=>{const li=document.createElement("li");li.textContent=c;cL.appendChild(li);});
+  const pL=document.getElementById("positiveList");pL.innerHTML="";
+  (ai.positive_indicators||[]).forEach(p=>{const li=document.createElement("li");li.textContent=p;pL.appendChild(li);});
+  renderTags("sensationalTags",d.signals.emotional.sensational_words,"tag-red");
+  renderTags("absolutistTags",d.signals.emotional.absolutist_language,"tag-orange");
+  renderTags("institutionTags",d.signals.scientific.institutions_mentioned,"tag-blue");
+  renderTags("statisticsTags",d.signals.scientific.statistical_claims,"tag-green");
+  const em=d.signals.emotional,sc=d.signals.scientific;
+  setVal("exaggerationVal",em.exaggeration_patterns.length,em.exaggeration_patterns.length>2?"val-red":"");
+  setVal("triggerVal",em.emotional_triggers?em.emotional_triggers.length:0,"");
+  setVal("capsVal",em.all_caps_words.length,em.all_caps_words.length>3?"val-orange":"");
+  setVal("exclVal",em.exclamation_count,em.exclamation_count>3?"val-red":"");
+  setVal("sentimentVal",em.sentiment_label,"");
+  setVal("researchVal",sc.research_references,sc.research_references>3?"val-green":"");
+  setVal("citationVal",sc.citation_count,sc.citation_count>0?"val-green":"");
+  setVal("hedgeVal",sc.hedge_words_used.length,sc.hedge_words_used.length>2?"val-green":"");
+  setVal("linksVal",sc.has_external_links?"Yes ✓":"No",sc.has_external_links?"val-green":"");
+  setVal("wordCountVal",d.word_count+" words","");
+  document.getElementById("results").style.display="block";
+  document.getElementById("results").scrollIntoView({behavior:"smooth",block:"start"});
+}
+function renderTags(id,items,cls){
+  const el=document.getElementById(id);el.innerHTML="";
+  if(!items||!items.length){el.innerHTML='<span style="font-size:.8rem;color:#bbb;">None detected</span>';return;}
+  items.forEach(item=>{const t=document.createElement("span");t.className="tag "+cls;t.textContent=item;el.appendChild(t);});
+}
+function setVal(id,val,cls){const el=document.getElementById(id);el.textContent=val;el.className="val "+(cls||"");}
+</script>
+</body>
+</html>
