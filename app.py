@@ -54,22 +54,22 @@ INSTITUTIONS = ["who","cdc","nih","harvard","mayo clinic"]
 
 db = mysql.connector.connect(
     host="localhost",
-    user="root",
+    user="health_user",
     password="1234",
-    database="Health_news_detector"
+    database="health_news_detector"
 )
 
 cursor = db.cursor()
 
-def save_to_database(url, text, emotional, scientific, statistical, credibility):
+def save_to_database(url, emotional, scientific, credibility):
     try:
         query = """
         INSERT INTO article_analysis
-        (article_url, article_text, emotional_score,
-         scientific_score, statistical_score, credibility_score)
-        VALUES (%s,%s,%s,%s,%s,%s)
+        (article_url, emotional_score,
+         scientific_score, credibility_score)
+        VALUES (%s,%s,%s,%s)
         """
-        values = (url, text, emotional, scientific, statistical, credibility)
+        values = (url, emotional, scientific, credibility)
         cursor.execute(query, values)
         db.commit()
     except Exception as e:
@@ -153,20 +153,47 @@ def analyse():
     # ✅ SAVE TO DB
     save_to_database(
         url,
-        text,
         analysis["emotional_score"],
         analysis["scientific_score"],
-        len(analysis["raw"]["st_hits"]),
         analysis["risk_score"]
-    )
-
+        )
+        
     return jsonify({
-        "title": title,
-        "risk_score": analysis["risk_score"],
-        "risk_label": risk_label(analysis["risk_score"]),
-        "emotional_score": analysis["emotional_score"],
-        "scientific_score": analysis["scientific_score"]
-    })
+    "title": title,
+    "risk_score": analysis["risk_score"],
+    "risk_label": risk_label(analysis["risk_score"]),
+    "emotional": analysis["emotional_score"],
+    "scientific": analysis["scientific_score"],
+
+    "signals": {
+        "emotional": {
+            "sensational_words": [],
+            "absolutist_language": [],
+            "exaggeration_patterns": [],
+            "all_caps_words": [],
+            "emotional_triggers": [],
+            "exclamation_count": 0,
+            "sentiment_label": "Neutral"
+        },
+        "scientific": {
+            "institutions_mentioned": [],
+            "statistical_claims": [],
+            "research_references": 0,
+            "citation_count": 0,
+            "hedge_words_used": [],
+            "has_external_links": False
+        }
+    },
+
+    "ai_assessment": {
+        "summary": "Preliminary credibility estimation based on linguistic signals.",
+        "reader_advice": "Verify claims using trusted medical sources.",
+        "key_concerns": [],
+        "positive_indicators": []
+    },
+
+    "word_count": len(text.split())
+})
 
 @app.route("/api/health")
 def health():
