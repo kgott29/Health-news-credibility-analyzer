@@ -348,6 +348,11 @@ showError("Please upload a file.");
 return;
 }
 
+if(!file.name.endsWith(".txt")){
+showError("Only .txt files allowed.");
+return;
+}
+
 const fileText=await file.text();
 
 payload={text:fileText};
@@ -468,24 +473,25 @@ d.signals.scientific.has_external_links?"Yes":"No";
   (ai.key_concerns||[]).forEach(c=>{const li=document.createElement("li");li.textContent=c;cL.appendChild(li);});
   const pL=document.getElementById("positiveList");pL.innerHTML="";
   (ai.positive_indicators||[]).forEach(p=>{const li=document.createElement("li");li.textContent=p;pL.appendChild(li);});
- /* renderTags("sensationalTags",d.signals.emotional.sensational_words,"tag-red");
-  renderTags("absolutistTags",d.signals.emotional.absolutist_language,"tag-orange");
-  renderTags("institutionTags",d.signals.scientific.institutions_mentioned,"tag-blue");
-  renderTags("statisticsTags",d.signals.scientific.statistical_claims,"tag-green"); */
   const em=d.signals.emotional,sc=d.signals.scientific;
-  /* setVal("exaggerationVal",em.exaggeration_patterns.length,em.exaggeration_patterns.length>2?"val-red":"");
-  setVal("triggerVal",em.emotional_triggers?em.emotional_triggers.length:0,"");
-  setVal("capsVal",em.all_caps_words.length,em.all_caps_words.length>3?"val-orange":"");
-  setVal("exclVal",em.exclamation_count,em.exclamation_count>3?"val-red":"");
-  setVal("sentimentVal",em.sentiment_label,"");
-  setVal("researchVal",sc.research_references,sc.research_references>3?"val-green":"");
-  setVal("citationVal",sc.citation_count,sc.citation_count>0?"val-green":"");
-  setVal("hedgeVal",sc.hedge_words_used.length,sc.hedge_words_used.length>2?"val-green":"");
-  setVal("linksVal",sc.has_external_links?"Yes ✓":"No",sc.has_external_links?"val-green":"");
-  setVal("wordCountVal",d.word_count+" words",""); */
   document.getElementById("results").style.display="block";
   document.getElementById("results").scrollIntoView({behavior:"smooth",block:"start"});
 }
+const params = new URLSearchParams(window.location.search);
+
+if(params.get("fromReport")==="true"){
+
+const stored=localStorage.getItem("analysis");
+
+if(stored){
+
+renderResults(JSON.parse(stored));
+
+localStorage.removeItem("analysis");
+
+}
+}
+
 function renderTags(id,items,cls){
   const el=document.getElementById(id);el.innerHTML="";
   if(!items||!items.length){el.innerHTML='<span style="font-size:.8rem;color:#bbb;">None detected</span>';return;}

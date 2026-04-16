@@ -150,11 +150,6 @@ font-size:.85rem;
 </div>
 
 <div class="row">
-<span>Reliability Level</span>
-<span id="reliabilityLabel"></span>
-</div>
-
-<div class="row">
 <span>Word Count</span>
 <span id="wordCount"></span>
 </div>
@@ -249,9 +244,6 @@ el.appendChild(tag);
 document.getElementById("credibilityScore").textContent =
 data.credibilityScore + " / 100";
 
-document.getElementById("reliabilityLabel").textContent =
-data.reliabilityLabel;
-
 document.getElementById("wordCount").textContent =
 data.word_count + " words";
 
@@ -298,9 +290,7 @@ document.getElementById("scientificStats").innerHTML = `
 
 
 function goBack(){
-
-window.location.href = "/";
-
+window.location.href = "/?fromReport=true";;
 }
 
 </script>
