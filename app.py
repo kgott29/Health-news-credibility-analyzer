@@ -92,41 +92,131 @@ def extract_from_url(url):
         return {"title": title, "text": text[:8000], "success": True}
     except Exception as e:
         return {"success": False, "error": str(e)}
+    
+def generate_reader_report(signals):
+
+    concerns = []
+    positives = []
+
+    if signals["emotional"]["sensational_words"]:
+        concerns.append(
+            "The article uses emotionally strong words like "
+            + ", ".join(signals["emotional"]["sensational_words"][:3])
+            + ", which may exaggerate claims."
+        )
+
+    if signals["emotional"]["exclamation_count"] > 2:
+        concerns.append(
+            "Frequent exclamation marks suggest a dramatic tone."
+        )
+
+    if signals["scientific"]["institutions_mentioned"]:
+        positives.append(
+            "Mentions trusted institutions such as "
+            + ", ".join(signals["scientific"]["institutions_mentioned"])
+        )
+
+    if signals["scientific"]["statistical_claims"]:
+        positives.append(
+            "Includes numerical/statistical evidence supporting claims."
+        )
+
+    if signals["scientific"]["research_references"] > 0:
+        positives.append(
+            "Refers to scientific studies or research."
+        )
+
+    return concerns, positives
 
 def analyse_text(text):
+
     lower = text.lower()
 
     s_hits = [w for w in SENSATIONAL_WORDS if w in lower]
     ab_hits = [w for w in ABSOLUTIST_WORDS if w in lower]
     ex_hits = re.findall("|".join(EXAGGERATION_PATTERNS), lower)
     hd_hits = [w for w in HEDGE_WORDS if w in lower]
+
     sci_hits = re.findall("|".join(SCIENTIFIC_MARKERS), lower)
     st_hits = re.findall("|".join(STATISTICAL_PATTERNS), lower)
     in_hits = [i for i in INSTITUTIONS if i in lower]
 
-    emotional_score = min(len(s_hits + ab_hits + ex_hits) / 10, 1)
-    scientific_score = min(len(sci_hits + st_hits + in_hits + hd_hits) / 10, 1)
+    exclamation_count = text.count("!")
+    all_caps_words = re.findall(r"\b[A-Z]{3,}\b", text)
 
-    risk = round((emotional_score * 60) - (scientific_score * 40) + 40, 1)
+    emotional_score = min(
+        (len(s_hits) + len(ab_hits) + len(ex_hits) + exclamation_count) / 12,
+        1
+    )
 
+    scientific_score = min(
+        (len(sci_hits) + len(st_hits) + len(in_hits) + len(hd_hits)) / 12,
+        1
+    )
+
+    risk = (
+        emotional_score * 45
+        + exclamation_count * 2
+        + len(all_caps_words) * 2
+        - scientific_score * 35
+        - len(st_hits) * 3
+        - len(in_hits) * 4
+        + 30
+    )
+
+    risk_score = max(0, min(100, round(risk, 2)))
+    credibility_score = 100 - risk_score
+    
     return {
         "emotional_score": emotional_score,
         "scientific_score": scientific_score,
-        "risk_score": risk,
-        "raw": {"st_hits": st_hits}
+        "credibility_score": credibility_score,
+
+        "signals": {
+
+            "emotional": {
+
+                "sensational_words": s_hits,
+                "absolutist_language": ab_hits,
+                "exaggeration_patterns": ex_hits,
+                "all_caps_words": all_caps_words,
+                "exclamation_count": exclamation_count
+
+            },
+
+            "scientific": {
+
+                "institutions_mentioned": in_hits,
+                "statistical_claims": st_hits,
+                "research_references": len(sci_hits),
+                "hedge_words_used": hd_hits,
+                "citation_count": len(re.findall(r"\[\d+\]", text)),
+                "has_external_links": "http" in text
+
+            }
+
+        }
+
     }
 
-def risk_label(score):
-    if score < 25: return "Low Risk"
-    if score < 50: return "Moderate Risk"
-    if score < 75: return "High Risk"
-    return "Very High Risk"
-
+def credibility_label(credibility_score):
+    if credibility_score < 25:
+        return "Low Reliability"
+    elif credibility_score < 50:
+        return "Moderate Reliability"
+    elif credibility_score < 75:
+        return "High Reliability"
+    else:
+        return "Very High Reliability"
 # ========================= ROUTES =========================
 
 @app.route("/")
 def index():
     return send_from_directory("static", "index.html")
+
+@app.route("/report.html")
+def report():
+    return send_from_directory("static", "report.html")
 
 @app.route("/api/analyse", methods=["POST"])
 def analyse():
@@ -155,44 +245,36 @@ def analyse():
         url,
         analysis["emotional_score"],
         analysis["scientific_score"],
-        analysis["risk_score"]
+        analysis["credibility_score"]
         )
+    
+    concerns, positives = generate_reader_report(analysis["signals"])
         
     return jsonify({
+
     "title": title,
-    "risk_score": analysis["risk_score"],
-    "risk_label": risk_label(analysis["risk_score"]),
+
+    "credibility_score": analysis["credibility_score"],
+
+    "reliability_label": credibility_label(
+        analysis["credibility_score"]
+    ),
+
     "emotional": analysis["emotional_score"],
+
     "scientific": analysis["scientific_score"],
 
-    "signals": {
-        "emotional": {
-            "sensational_words": [],
-            "absolutist_language": [],
-            "exaggeration_patterns": [],
-            "all_caps_words": [],
-            "emotional_triggers": [],
-            "exclamation_count": 0,
-            "sentiment_label": "Neutral"
-        },
-        "scientific": {
-            "institutions_mentioned": [],
-            "statistical_claims": [],
-            "research_references": 0,
-            "citation_count": 0,
-            "hedge_words_used": [],
-            "has_external_links": False
-        }
-    },
+    "signals": analysis["signals"],
 
     "ai_assessment": {
         "summary": "Preliminary credibility estimation based on linguistic signals.",
         "reader_advice": "Verify claims using trusted medical sources.",
-        "key_concerns": [],
-        "positive_indicators": []
+        "key_concerns": concerns,
+        "positive_indicators": positives
     },
 
     "word_count": len(text.split())
+
 })
 
 @app.route("/api/health")
