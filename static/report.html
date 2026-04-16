@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Detailed Signal Report — HealthCheck</title>
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+
+:root{
+--ink:#0f1117;
+--paper:#f8f6f1;
+--cream:#ede9e0;
+--accent:#2980b9;
+--green:#27ae60;
+--orange:#e67e22;
+--red:#c0392b;
+--border:rgba(15,17,23,.12);
+--shadow:0 2px 24px rgba(15,17,23,.08);
+--radius:14px;
+--mono:"DM Sans",sans-serif;
+--serif:"DM Serif Display",serif;
+}
+
+body{
+font-family:var(--mono);
+background:var(--paper);
+color:var(--ink);
+margin:0;
+}
+
+header{
+background:var(--ink);
+color:white;
+padding:28px 32px 24px;
+display:flex;
+gap:16px;
+align-items:baseline;
+}
+
+.logo{
+font-family:var(--serif);
+font-size:1.9rem;
+}
+
+.logo span{
+color:#e74c3c;
+}
+
+.wrapper{
+max-width:900px;
+margin:auto;
+padding:40px 24px 80px;
+}
+
+.card{
+background:white;
+border:1px solid var(--border);
+border-radius:var(--radius);
+padding:32px;
+box-shadow:var(--shadow);
+margin-bottom:24px;
+}
+
+h2{
+font-family:var(--serif);
+margin-bottom:20px;
+}
+
+.section-title{
+font-size:.8rem;
+text-transform:uppercase;
+letter-spacing:.06em;
+color:#777;
+margin-bottom:6px;
+}
+
+.tag-list{
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+}
+
+.tag{
+padding:5px 12px;
+border-radius:20px;
+font-size:.8rem;
+font-weight:500;
+}
+
+.tag-red{background:#fdecea;color:#a93226;}
+.tag-orange{background:#fef0e7;color:#8a4500;}
+.tag-blue{background:#eaf4fb;color:#1a5276;}
+.tag-green{background:#d5f5e3;color:#1a6b35;}
+
+.row{
+display:flex;
+justify-content:space-between;
+padding:6px 0;
+border-bottom:1px solid var(--cream);
+font-size:.9rem;
+}
+
+.row:last-child{
+border:none;
+}
+
+.back-btn{
+display:block;
+margin:40px auto;
+background:var(--ink);
+color:white;
+border:none;
+padding:14px 28px;
+border-radius:10px;
+font-weight:600;
+cursor:pointer;
+transition:.2s;
+}
+
+.back-btn:hover{
+background:#222;
+}
+
+.empty{
+color:#aaa;
+font-size:.85rem;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+<div class="logo">Health<span>Check</span></div>
+<div>Detailed Signal Report</div>
+</header>
+
+<div class="wrapper">
+
+<div class="card">
+<h2>Credibility Overview</h2>
+
+<div class="row">
+<span>Credibility Score</span>
+<span id="credibilityScore"></span>
+</div>
+
+<div class="row">
+<span>Reliability Level</span>
+<span id="reliabilityLabel"></span>
+</div>
+
+<div class="row">
+<span>Word Count</span>
+<span id="wordCount"></span>
+</div>
+
+</div>
+
+
+<div class="card">
+
+<h2>Emotional / Manipulation Signals</h2>
+
+<div class="section-title">Sensational Words</div>
+<div id="sensationalTags" class="tag-list"></div>
+
+<br>
+
+<div class="section-title">Absolutist Language</div>
+<div id="absolutistTags" class="tag-list"></div>
+
+<br>
+
+<div id="emotionalStats"></div>
+
+</div>
+
+
+<div class="card">
+
+<h2>Scientific Credibility Signals</h2>
+
+<div class="section-title">Institutions Mentioned</div>
+<div id="institutionTags" class="tag-list"></div>
+
+<br>
+
+<div class="section-title">Statistical Claims</div>
+<div id="statisticsTags" class="tag-list"></div>
+
+<br>
+
+<div id="scientificStats"></div>
+
+</div>
+
+
+<button class="back-btn" onclick="goBack()">
+← Back to Analysis Page
+</button>
+
+</div>
+
+
+<script>
+
+const data = JSON.parse(localStorage.getItem("analysis"));
+
+if(!data){
+
+document.body.innerHTML =
+"<h2 style='text-align:center;margin-top:100px;'>No analysis found. Please run analysis first.</h2>";
+
+}
+
+
+function renderTags(id, items, cls){
+
+const el = document.getElementById(id);
+
+if(!items || items.length===0){
+
+el.innerHTML = "<span class='empty'>None detected</span>";
+
+return;
+
+}
+
+items.forEach(item=>{
+
+const tag = document.createElement("span");
+
+tag.className = "tag " + cls;
+
+tag.textContent = item;
+
+el.appendChild(tag);
+
+});
+
+}
+
+
+document.getElementById("credibilityScore").textContent =
+data.credibilityScore + " / 100";
+
+document.getElementById("reliabilityLabel").textContent =
+data.reliabilityLabel;
+
+document.getElementById("wordCount").textContent =
+data.word_count + " words";
+
+
+renderTags(
+"sensationalTags",
+data.signals.emotional.sensational_words,
+"tag-red"
+);
+
+renderTags(
+"absolutistTags",
+data.signals.emotional.absolutist_language,
+"tag-orange"
+);
+
+renderTags(
+"institutionTags",
+data.signals.scientific.institutions_mentioned,
+"tag-blue"
+);
+
+renderTags(
+"statisticsTags",
+data.signals.scientific.statistical_claims,
+"tag-green"
+);
+
+
+document.getElementById("emotionalStats").innerHTML = `
+<div class="row"><span>Exaggeration patterns</span><span>${data.signals.emotional.exaggeration_patterns.length}</span></div>
+<div class="row"><span>ALL CAPS words</span><span>${data.signals.emotional.all_caps_words.length}</span></div>
+<div class="row"><span>Exclamation marks</span><span>${data.signals.emotional.exclamation_count}</span></div>
+<div class="row"><span>Sentiment</span><span>${data.signals.emotional.sentiment_label}</span></div>
+`;
+
+
+document.getElementById("scientificStats").innerHTML = `
+<div class="row"><span>Research references</span><span>${data.signals.scientific.research_references}</span></div>
+<div class="row"><span>Citations</span><span>${data.signals.scientific.citation_count}</span></div>
+<div class="row"><span>Hedge words</span><span>${data.signals.scientific.hedge_words_used.length}</span></div>
+<div class="row"><span>External links</span><span>${data.signals.scientific.has_external_links ? "Yes ✓" : "No"}</span></div>
+`;
+
+
+function goBack(){
+
+window.location.href = "/";
+
+}
+
+</script>
+
+</body>
+</html>
