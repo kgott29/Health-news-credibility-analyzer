@@ -79,6 +79,36 @@ textarea{min-height:160px}
 .positive-list li::before{content:"✓";position:absolute;left:0;color:var(--green)}
 .error-box{background:#fdecea;border:1px solid #e74c3c44;border-radius:10px;padding:18px 22px;color:#a93226;font-size:.9rem;margin-bottom:20px;display:none}
 footer{text-align:center;padding:20px;font-size:.78rem;color:#bbb}
+.info-badge{
+  font-size:.75rem;
+  margin-left:6px;
+  opacity:.6;
+  cursor:pointer;
+  border-bottom:1px dotted #aaa;
+}
+
+.info-badge:hover{
+opacity:1;
+}
+#viewReportBtn{
+display:block;
+margin:24px auto 0;
+background:var(--accent2);
+color:white;
+border:none;
+border-radius:10px;
+padding:14px 28px;
+font-family:var(--mono);
+font-size:.9rem;
+font-weight:600;
+letter-spacing:.04em;
+cursor:pointer;
+transition:.2s;
+}
+
+#viewReportBtn:hover{
+background:#1f6ea3;
+}
 </style>
 </head>
 <body>
@@ -92,7 +122,9 @@ footer{text-align:center;padding:20px;font-size:.78rem;color:#bbb}
     <div class="tabs">
       <button class="tab-btn active" data-tab="url">🔗 Article URL</button>
       <button class="tab-btn" data-tab="text">📋 Paste Text</button>
+      <button class="tab-btn" data-tab="file">📄 Upload Article</button>      
     </div>
+    
     <div id="tab-url" class="tab-pane active">
       <input type="url" id="urlInput" placeholder="https://example.com/health-article" autocomplete="off" />
     </div>
@@ -100,6 +132,14 @@ footer{text-align:center;padding:20px;font-size:.78rem;color:#bbb}
       <textarea id="textInput" placeholder="Paste the health news article text here…"></textarea>
       <div class="char-count"><span id="charCount">0</span> characters</div>
     </div>
+    <div id="tab-file" class="tab-pane">
+
+<input type="file"
+id="fileInput"
+accept=".txt"
+style="margin-top:10px;" />
+
+</div>
     <button class="analyse-btn" id="analyseBtn">
       <div class="spinner" id="spinner"></div>
       <span id="btnText">Analyse Credibility</span>
@@ -111,8 +151,15 @@ footer{text-align:center;padding:20px;font-size:.78rem;color:#bbb}
       <div class="risk-header">
         <span class="risk-badge" id="riskBadge">—</span>
         <div>
-          <div style="font-size:.78rem;color:#888;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px;">Credibility Risk Score</div>
+          <div style="font-size:.78rem;color:#888;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px;">Credibility Score</div>
           <div style="font-size:2rem;font-weight:700;" id="riskScore">—</div>
+          <span class="info-badge"
+title="Credibility Score Guide:
+0–24 → Low Reliability
+25–49 → Moderate Reliability
+50–74 → High Reliability
+75–100 → Very High Reliability">
+ⓘ</span>
         </div>
         <div id="articleTitle" class="article-title" style="flex:1;min-width:180px;"></div>
       </div>
@@ -120,33 +167,88 @@ footer{text-align:center;padding:20px;font-size:.78rem;color:#bbb}
         <svg width="260" height="145" viewBox="0 0 260 145">
           <defs>
             <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#27ae60"/>
-              <stop offset="35%" stop-color="#f1c40f"/>
-              <stop offset="65%" stop-color="#e67e22"/>
-              <stop offset="100%" stop-color="#8e44ad"/>
+              <stop offset="0%" stop-color="#c0392b"/>
+<stop offset="35%" stop-color="#e67e22"/>
+<stop offset="65%" stop-color="#f1c40f"/>
+<stop offset="100%" stop-color="#27ae60"/>
             </linearGradient>
           </defs>
           <path d="M 20 130 A 110 110 0 0 1 240 130" fill="none" stroke="#e0ddd5" stroke-width="18" stroke-linecap="round"/>
           <path id="gaugeFill" d="M 20 130 A 110 110 0 0 1 240 130" fill="none" stroke="url(#gaugeGrad)" stroke-width="18" stroke-linecap="round" stroke-dasharray="0 346"/>
           <line id="gaugeNeedle" x1="130" y1="130" x2="130" y2="30" stroke="#0f1117" stroke-width="2.5" stroke-linecap="round" transform="rotate(0,130,130)"/>
           <circle cx="130" cy="130" r="6" fill="#0f1117"/>
-          <text x="10" y="145" font-size="10" fill="#888">Low</text>
-          <text x="112" y="20" font-size="10" fill="#888" text-anchor="middle">Moderate</text>
-          <text x="230" y="145" font-size="10" fill="#888" text-anchor="end">Very High</text>
+          <text x="12" y="158" font-size="12" fill="#222">Low</text>
+
+<text x="130" y="18"
+      font-size="12"
+      fill="#222"
+      text-anchor="middle">
+Moderate
+</text>
+
+<text x="248" y="158"
+      font-size="12"
+      fill="#222"
+      text-anchor="end">
+Very High
+</text>
         </svg>
       </div>
-      <div class="meters">
+      <div class="meters" style="grid-template-columns:repeat(2,1fr);">
+
         <div class="meter-box">
-          <div class="meter-label">Emotional Manipulation</div>
+          <div class="meter-label">
+Emotional Manipulation</div>
           <div class="meter-bar-bg"><div class="meter-bar bar-emotional" id="barEmotional"></div></div>
           <div class="meter-value" id="valEmotional">—</div>
         </div>
         <div class="meter-box">
-          <div class="meter-label">Scientific Credibility</div>
+          <div class="meter-label">
+Scientific Credibility</div>
           <div class="meter-bar-bg"><div class="meter-bar bar-scientific" id="barScientific"></div></div>
           <div class="meter-value" id="valScientific">—</div>
         </div>
       </div>
+      <div class="meter-box">
+  <div class="meter-label">
+    Citation Strength
+  </div>
+  <div class="meter-bar-bg">
+    <div class="meter-bar bar-scientific" id="barCitation"></div>
+  </div>
+  <div class="meter-value" id="valCitationMeter">—</div>
+</div>
+
+<div class="meter-box">
+  <div class="meter-label">
+    Research Evidence
+  </div>
+  <div class="meter-bar-bg">
+    <div class="meter-bar bar-scientific" id="barResearch"></div>
+  </div>
+  <div class="meter-value" id="valResearchMeter">—</div>
+</div>
+
+<div class="meter-box">
+  <div class="meter-label">
+    Language Certainty
+  </div>
+  <div class="meter-bar-bg">
+    <div class="meter-bar bar-emotional" id="barCertainty"></div>
+  </div>
+  <div class="meter-value" id="valCertaintyMeter">—</div>
+</div>
+
+<div class="meter-box">
+  <div class="meter-label">
+    External References
+  </div>
+  <div class="meter-bar-bg">
+    <div class="meter-bar bar-scientific" id="barLinks"></div>
+  </div>
+  <div class="meter-value" id="valLinksMeter">—</div>
+</div>
+</div>
     </div>
     <div class="result-card">
       <h2 style="font-family:var(--serif);margin-bottom:16px;">Assessment</h2>
@@ -169,8 +271,8 @@ footer{text-align:center;padding:20px;font-size:.78rem;color:#bbb}
         <span id="readerAdvice">—</span>
       </div>
     </div>
-    <div class="result-card">
-      <h2 style="font-family:var(--serif);margin-bottom:20px;">Signal Breakdown</h2>
+    <!--<div class="result-card">
+      <h2 style="font-family:var(--serif);margin-bottom:20px;">assessment</h2>
       <div class="signals-grid">
         <div class="signal-section emotional">
           <h3>🔴 Emotional / Manipulation</h3>
@@ -203,7 +305,10 @@ footer{text-align:center;padding:20px;font-size:.78rem;color:#bbb}
       </div>
     </div>
   </div>
-</div>
+</div> -->
+<button id="viewReportBtn" style="display:none;">
+View Detailed Signal Report
+</button>
 <footer>HealthCheck · Local credibility analysis · Not a substitute for professional fact-checking</footer>
 <script>
 document.querySelectorAll(".tab-btn").forEach(btn=>{
@@ -217,23 +322,92 @@ document.querySelectorAll(".tab-btn").forEach(btn=>{
 document.getElementById("textInput").addEventListener("input",function(){
   document.getElementById("charCount").textContent=this.value.length;
 });
-document.getElementById("analyseBtn").addEventListener("click",async()=>{
-  const urlInput=document.getElementById("urlInput").value.trim();
-  const textInput=document.getElementById("textInput").value.trim();
-  const activeTab=document.querySelector(".tab-btn.active").dataset.tab;
-  const payload=activeTab==="url"?{url:urlInput}:{text:textInput};
-  if(activeTab==="url"&&!urlInput)return showError("Please enter a URL.");
-  if(activeTab==="text"&&textInput.length<50)return showError("Please paste at least 50 characters of text.");
-  setLoading(true);clearError();
-  document.getElementById("results").style.display="none";
-  try{
-    const res=await fetch("/api/analyse",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-    const data=await res.json();
-    if(!res.ok){showError(data.error||"Analysis failed.");return;}
-    renderResults(data);
-  }catch(e){showError("Network error — is the server running? ("+e.message+")");}
-  finally{setLoading(false);}
+document.getElementById("analyseBtn").addEventListener("click", async () => {
+
+const urlInput = document.getElementById("urlInput").value.trim();
+const textInput = document.getElementById("textInput").value.trim();
+
+const activeTab = document.querySelector(".tab-btn.active").dataset.tab;
+
+let payload;
+
+if(activeTab==="url"){
+payload={url:urlInput};
+}
+
+else if(activeTab==="text"){
+payload={text:textInput};
+}
+
+else if(activeTab==="file"){
+
+const file=document.getElementById("fileInput").files[0];
+
+if(!file){
+showError("Please upload a file.");
+return;
+}
+
+const fileText=await file.text();
+
+payload={text:fileText};
+
+}
+if (activeTab === "url" && !urlInput)
+return showError("Please enter a URL.");
+
+if (activeTab === "text" && textInput.length < 50)
+return showError("Please paste at least 50 characters.");
+
+setLoading(true);
+clearError();
+
+document.getElementById("results").style.display = "none";
+
+try {
+  localStorage.removeItem("analysis");
+document.getElementById("viewReportBtn").style.display="none";
+
+const res = await fetch("/api/analyse", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify(payload)
 });
+clearError();
+
+const data = await res.json();
+
+if (!res.ok) {
+showError(data.error || "Analysis failed.");
+return;
+}
+
+renderResults(data);
+
+/* ✅ Save for report page */
+localStorage.setItem("analysis", JSON.stringify(data));
+
+/* ✅ show report button after results appear */
+document.getElementById("viewReportBtn").style.display = "block";
+
+} catch (e) {
+
+showError("Network error — is the server running? (" + e.message + ")");
+
+} finally {
+
+setLoading(false);
+
+}
+
+});
+
+document.getElementById("viewReportBtn").addEventListener("click", () => {
+
+window.open("report.html", "_blank");
+
+});
+
 function setLoading(on){
   document.getElementById("spinner").style.display=on?"block":"none";
   document.getElementById("btnText").textContent=on?"Analysing…":"Analyse Credibility";
@@ -242,12 +416,20 @@ function setLoading(on){
 function showError(msg){const b=document.getElementById("errorBox");b.textContent="⚠ "+msg;b.style.display="block";}
 function clearError(){document.getElementById("errorBox").style.display="none";}
 function renderResults(d){
-  const riskClass={"Low Risk":"risk-low","Moderate Risk":"risk-moderate","High Risk":"risk-high","Very High Risk":"risk-very-high"}[d.risk_label]||"risk-moderate";
-  document.getElementById("riskBadge").textContent=d.risk_label;
-  document.getElementById("riskBadge").className="risk-badge "+riskClass;
-  document.getElementById("riskScore").textContent=d.risk_score+" / 100";
+  const reliabilityClass = {
+  "Very High Reliability":"risk-low",
+  "High Reliability":"risk-moderate",
+  "Moderate Reliability":"risk-high",
+  "Low Reliability":"risk-very-high"
+}[d.reliability_label] || "risk-moderate";
+
+document.getElementById("riskBadge").textContent = d.reliability_label;
+document.getElementById("riskBadge").className =
+  "risk-badge " + reliabilityClass;
+  document.getElementById("riskBadge").className="risk-badge "+ reliabilityClass;
+  document.getElementById("riskScore").textContent=d.credibility_score+" / 100";
   document.getElementById("articleTitle").textContent=d.title||"";
-  const pct=d.risk_score/100;
+  const pct=d.credibility_score/100;
   document.getElementById("gaugeFill").setAttribute("stroke-dasharray",(pct*346)+" 346");
   document.getElementById("gaugeNeedle").setAttribute("transform",`rotate(${-90+pct*180},130,130)`);
   setTimeout(()=>{
@@ -256,6 +438,29 @@ function renderResults(d){
   },80);
   document.getElementById("valEmotional").textContent=Math.round(d.emotional*100)+"%";
   document.getElementById("valScientific").textContent=Math.round(d.scientific*100)+"%";
+  document.getElementById("barCitation").style.width =
+(Math.min(d.signals.scientific.citation_count/5,1)*100)+"%";
+
+document.getElementById("valCitationMeter").textContent =
+d.signals.scientific.citation_count;
+
+document.getElementById("barResearch").style.width =
+(d.signals.scientific.research_references/5*100)+"%";
+
+document.getElementById("valResearchMeter").textContent =
+d.signals.scientific.research_references;
+
+document.getElementById("barCertainty").style.width =
+(d.signals.scientific.hedge_words_used.length/5*100)+"%";
+
+document.getElementById("valCertaintyMeter").textContent =
+d.signals.scientific.hedge_words_used.length;
+
+document.getElementById("barLinks").style.width =
+(d.signals.scientific.has_external_links?100:10)+"%";
+
+document.getElementById("valLinksMeter").textContent =
+d.signals.scientific.has_external_links?"Yes":"No";
   const ai=d.ai_assessment||{};
   document.getElementById("aiSummary").textContent=ai.summary||"—";
   document.getElementById("readerAdvice").textContent=ai.reader_advice||"—";
@@ -263,12 +468,12 @@ function renderResults(d){
   (ai.key_concerns||[]).forEach(c=>{const li=document.createElement("li");li.textContent=c;cL.appendChild(li);});
   const pL=document.getElementById("positiveList");pL.innerHTML="";
   (ai.positive_indicators||[]).forEach(p=>{const li=document.createElement("li");li.textContent=p;pL.appendChild(li);});
-  renderTags("sensationalTags",d.signals.emotional.sensational_words,"tag-red");
+ /* renderTags("sensationalTags",d.signals.emotional.sensational_words,"tag-red");
   renderTags("absolutistTags",d.signals.emotional.absolutist_language,"tag-orange");
   renderTags("institutionTags",d.signals.scientific.institutions_mentioned,"tag-blue");
-  renderTags("statisticsTags",d.signals.scientific.statistical_claims,"tag-green");
+  renderTags("statisticsTags",d.signals.scientific.statistical_claims,"tag-green"); */
   const em=d.signals.emotional,sc=d.signals.scientific;
-  setVal("exaggerationVal",em.exaggeration_patterns.length,em.exaggeration_patterns.length>2?"val-red":"");
+  /* setVal("exaggerationVal",em.exaggeration_patterns.length,em.exaggeration_patterns.length>2?"val-red":"");
   setVal("triggerVal",em.emotional_triggers?em.emotional_triggers.length:0,"");
   setVal("capsVal",em.all_caps_words.length,em.all_caps_words.length>3?"val-orange":"");
   setVal("exclVal",em.exclamation_count,em.exclamation_count>3?"val-red":"");
@@ -277,7 +482,7 @@ function renderResults(d){
   setVal("citationVal",sc.citation_count,sc.citation_count>0?"val-green":"");
   setVal("hedgeVal",sc.hedge_words_used.length,sc.hedge_words_used.length>2?"val-green":"");
   setVal("linksVal",sc.has_external_links?"Yes ✓":"No",sc.has_external_links?"val-green":"");
-  setVal("wordCountVal",d.word_count+" words","");
+  setVal("wordCountVal",d.word_count+" words",""); */
   document.getElementById("results").style.display="block";
   document.getElementById("results").scrollIntoView({behavior:"smooth",block:"start"});
 }
