@@ -7,8 +7,7 @@ import mysql.connector
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import re
-import requests
-from bs4 import BeautifulSoup
+from newspaper import Article
 
 app = Flask(__name__, static_folder="static")
 
@@ -50,6 +49,15 @@ STATISTICAL_PATTERNS = [
 
 INSTITUTIONS = ["who","cdc","nih","harvard","mayo clinic"]
 
+TRUSTED_DOMAINS = [
+    "ncbi.nlm.nih.gov",
+    "pubmed.ncbi.nlm.nih.gov",
+    "who.int",
+    "cdc.gov",
+    "nih.gov",
+    "mayoclinic.org"
+]
+
 # ========================= DATABASE =========================
 
 db = mysql.connector.connect(
@@ -79,20 +87,22 @@ def save_to_database(url, emotional, scientific, credibility):
 
 def extract_from_url(url):
     try:
-        headers = {"User-Agent": "Mozilla/5.0"}
-        resp = requests.get(url, headers=headers, timeout=10)
-        soup = BeautifulSoup(resp.text, "html.parser")
+        article = Article(url)
+        article.download()
+        article.parse()
 
-        for tag in soup(["script","style"]):
-            tag.decompose()
+        if len(article.text) < 50:
+            return {"success": False, "error": "Article content too short"}
 
-        title = soup.title.string if soup.title else ""
-        text = soup.get_text()
+        return {
+            "title": article.title,
+            "text": article.text[:8000],
+            "success": True
+        }
 
-        return {"title": title, "text": text[:8000], "success": True}
     except Exception as e:
-        return {"success": False, "error": str(e)}
-    
+        return {"success": False, "error": str(e)}  
+          
 def generate_reader_report(signals):
 
     concerns = []
@@ -164,8 +174,8 @@ def analyse_text(text):
         + 30
     )
 
-    risk_score = max(0, min(100, round(risk, 2)))
-    credibility_score = 100 - risk_score
+    #risk_score = max(0, min(100, round(risk, 2)))
+    credibility_score = round(100 - risk, 2)
     
     return {
         "emotional_score": emotional_score,
@@ -237,6 +247,9 @@ def analyse():
         return jsonify({"error": "Text too short"}), 400
 
     analysis = analyse_text(text)
+
+    if url and any(domain in url for domain in TRUSTED_DOMAINS):
+        analysis["credibility_score"] = min(100, analysis["credibility_score"] + 15)
     
     print("📥 Calling save_to_database...")
 
