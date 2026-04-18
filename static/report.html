@@ -242,7 +242,7 @@ el.appendChild(tag);
 
 
 document.getElementById("credibilityScore").textContent =
-data.credibilityScore + " / 100";
+data.credibility_score + " / 100";
 
 document.getElementById("wordCount").textContent =
 data.word_count + " words";
@@ -277,7 +277,6 @@ document.getElementById("emotionalStats").innerHTML = `
 <div class="row"><span>Exaggeration patterns</span><span>${data.signals.emotional.exaggeration_patterns.length}</span></div>
 <div class="row"><span>ALL CAPS words</span><span>${data.signals.emotional.all_caps_words.length}</span></div>
 <div class="row"><span>Exclamation marks</span><span>${data.signals.emotional.exclamation_count}</span></div>
-<div class="row"><span>Sentiment</span><span>${data.signals.emotional.sentiment_label}</span></div>
 `;
 
 

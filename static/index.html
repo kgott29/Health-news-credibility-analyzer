@@ -370,7 +370,6 @@ clearError();
 document.getElementById("results").style.display = "none";
 
 try {
-  localStorage.removeItem("analysis");
 document.getElementById("viewReportBtn").style.display="none";
 
 const res = await fetch("/api/analyse", {
